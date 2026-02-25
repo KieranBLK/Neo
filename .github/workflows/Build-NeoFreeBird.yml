@@ -93,11 +93,12 @@ jobs:
       - name: Install Cyan
         run: pipx install --force https://github.com/asdfzxcvbn/pyzule-rw/archive/main.zip
 
-      - name: Build NFB
+      - name: Copy Package to Dir
         run: |
-          cd tweak
-          make clean package DEBUG=0 FINALPACKAGE=1
-          mv packages/*.deb ${{ github.workspace }}/tweak.deb
+         mkdir -p main
+         find tweak -type f -name "*.deb" -exec cp {} main \;
+         echo "Files in main after copy:"
+         ls -lh main
 
       - name: Patch and Inject
         run: |
