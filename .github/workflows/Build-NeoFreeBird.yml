@@ -92,7 +92,12 @@ jobs:
           
       - name: Install Cyan
         run: pipx install --force https://github.com/asdfzxcvbn/pyzule-rw/archive/main.zip
-
+      
+      - name: Build tweak with Theos
+        run: |
+          cd tweak
+          make clean package DEBUG=0 FINALPACKAGE=1
+          
       - name: Copy Package to Dir
         run: |
          mkdir -p main
