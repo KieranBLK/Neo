@@ -21,10 +21,22 @@ jobs:
       contents: write
 
     steps:
+      - name: Checkout Main Repo
+        uses: actions/checkout@v6.0.1
+        with:
+          repository: KieranBLK/Neo
+          path: main
+          submodules: recursive
+
+      - name: Checkout Tweak Repo
+        uses: actions/checkout@v6.0.1
+        with:
+          repository: Neo/tweak
+          path: tweak
+          submodules: recursive
+          
       - name: Hide Sensitive Inputs
         uses: levibostian/action-hide-sensitive-inputs@v1
-        with:
-          exclude_inputs: sdk_version,target_version
           
       - name: Download and Validate IPA
         id: ipa
@@ -114,19 +126,19 @@ jobs:
           fi
 
           # Inject 
-          for f in *.deb; do
+          for f in main/*.deb; do
             if [ -f "$f" ]; then
               tweaks="$tweaks $f"
             fi
           done
-          cyan -i twitter.ipa -o NeoFreeBird_${{ steps.ipa.outputs.X_VERSION }}.ipa
+          cyan -i twitter.ipa -o NeoFreeBird_${{ steps.ipa.outputs.x_version }}.ipa
 
       - name: Upload Draft to GitHub Releases
         uses: softprops/action-gh-release@v2.0.1
         with:
           tag_name: NFB-${{ github.run_number }}
-          name: NeoFreeBird_${{ steps.ipa.outputs.X_VERSION }}.ipa
-          files: NeoFreeBird_${{ steps.ipa.outputs.X_VERSION }}.ipa
+          name: NeoFreeBird_${{ steps.ipa.outputs.x_version }}.ipa
+          files: NeoFreeBird_${{ steps.ipa.outputs.x_version }}.ipa
           draft: true
       
       - name: Output Release URL
