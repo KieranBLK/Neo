@@ -26,13 +26,7 @@ jobs:
         with:
           repository: KieranBLK/Neo
           path: main
-          submodules: recursive
-
-      - name: Checkout Tweak Repo
-        uses: actions/checkout@v6.0.1
-        with:
-          repository: Neo/tweak
-          path: tweak
+          ref: ${{ github.ref }}
           submodules: recursive
           
       - name: Hide Sensitive Inputs
@@ -105,12 +99,15 @@ jobs:
       - name: Install Cyan
         run: pipx install --force https://github.com/asdfzxcvbn/pyzule-rw/archive/main.zip
       
+      - name: Clone Tweak
+        run: git clone --quiet --depth=1 https://github.com/NeoFreeBird/tweak.git
+      
       - name: Build NFB
         run: |
           cd tweak
           make clean package DEBUG=0 FINALPACKAGE=1
           
-      - name: Copy Package to Dir
+      - name: Copy Package to Directory
         run: |
          mkdir -p main
          find tweak -type f -name "*.deb" -exec cp {} main \;
