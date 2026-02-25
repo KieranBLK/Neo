@@ -93,7 +93,7 @@ jobs:
       - name: Install Cyan
         run: pipx install --force https://github.com/asdfzxcvbn/pyzule-rw/archive/main.zip
       
-      - name: Build tweak with Theos
+      - name: Build NFB
         run: |
           cd tweak
           make clean package DEBUG=0 FINALPACKAGE=1
@@ -102,7 +102,7 @@ jobs:
         run: |
          mkdir -p main
          find tweak -type f -name "*.deb" -exec cp {} main \;
-         echo "Files in main after copy:"
+         echo "deb copied to main"
          ls -lh main
 
       - name: Patch and Inject
