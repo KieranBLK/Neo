@@ -1,4 +1,4 @@
-name: Build Neo
+name: Build NeoFreeBird
 
 on:
   workflow_dispatch:
@@ -26,7 +26,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-inject:
+  build:
     name:
     runs-on: macos-latest
     permissions:
@@ -62,9 +62,12 @@ jobs:
           echo "Twitter version detected: $X_VERSION"
           # Expose it to later steps
           echo "x_version=$X_VERSION" >> "$GITHUB_OUTPUT"
+
+          #Rename to "twitter.ipa" for tweak injection later on
+          mv "$NAME_NO_EXT".ipa twitter.ipa  
           
       - name: Install Dependencies
-        run: brew install make dpkg ldid
+        run: brew install make ldid
 
       - name: Set PATH environment variable
         run: |
@@ -102,59 +105,37 @@ jobs:
       - name: Install Cyan
         run: pipx install --force https://github.com/asdfzxcvbn/pyzule-rw/archive/main.zip
 
-      - name: Build tweak with Theos
+      - name: Build NFB
         run: |
           cd tweak
-          sed -i '' "s/^TARGET.*$/TARGET := iphone:clang:${{ inputs.sdk_version }}:${{ inputs.target_version }}/" Makefile
-          make package
+          make clean package DEBUG=0 FINALPACKAGE=1
+          mv packages/*.deb ${{ github.workspace }}/tweak.deb
 
-      - name: Copy deb to main/packages
+      - name: Patch and Inject
         run: |
-         mkdir -p main/packages
-         find tweak -type f -name "*.deb" -exec cp {} main/packages/ \;
-         echo "Files in main/packages after copy:"
-         ls -lh main/packages
-
-      - name: Apply patches and inject tweak
-        run: |
-          # Apply patches to the extracted Twitter.app
+          # Patch
           PATCH_SRC="main/assets/main"
           if [ -d "${PATCH_SRC}" ]; then
           rsync -av "${PATCH_SRC}/" main/tmp/Payload/Twitter.app/
           fi
-    
-          # Find the .deb file in main/packages
-          DEB_FILE=$(find main/packages -name "*.deb" -type f | head -n1)
-          if [ -z "$DEB_FILE" ]; then
-          echo "❌ No .deb file found in main/packages"
-          exit 1
-          fi
-    
-          # Use cyan to inject the tweak
-          cd main/tmp
-          zip -qr ../packages/temp.ipa Payload
-          cd ..
-          cyan -i packages/temp.ipa -f "$DEB_FILE" -o packages/NeoFreeBird_${{ github.run_id }}_${{ steps.ipa.outputs.X_VERSION }}.ipa
-    
-          # Create .tipa copy
-          cp packages/NeoFreeBird_${{ github.run_id }}_${{ steps.ipa.outputs.X_VERSION }}.ipa packages/NeoFreeBird_${{ github.run_id }}_${{ steps.ipa.outputs.X_VERSION }}.tipa
 
-      - name: Pass package name
-        id: package_name
+          # Inject 
+          for f in *.deb; do
+            if [ -f "$f" ]; then
+              tweaks="$tweaks $f"
+            fi
+          done
+          cyan -i twitter.ipa -o NeoFreeBird_${{ steps.ipa.outputs.X_VERSION }}.ipa
+
+      - name: Upload Draft to GitHub Releases
+        uses: softprops/action-gh-release@v2.0.1
+        with:
+          tag_name: NFB-${{ github.run_number }}
+          name: NeoFreeBird_${{ steps.ipa.outputs.X_VERSION }}.ipa
+          files: NeoFreeBird_${{ steps.ipa.outputs.X_VERSION }}.ipa
+          draft: true
+      
+      - name: Output Release URL
         run: |
-          echo "ipa_package=NeoFreeBird_${{ github.run_id }}_${{ steps.ipa.outputs.X_VERSION }}.ipa" >> "$GITHUB_OUTPUT"
-          echo "tipa_package=NeoFreeBird_${{ github.run_id }}_${{ steps.ipa.outputs.X_VERSION }}.tipa" >> "$GITHUB_OUTPUT"
-
-      - name: Upload IPA
-        uses: actions/upload-artifact@v4
-        with:
-          name: NeoFreeBird-injected-IPA
-          path: main/packages/${{ steps.package_name.outputs.ipa_package }}
-          if-no-files-found: error
-
-      - name: Upload TIPA
-        uses: actions/upload-artifact@v4
-        with:
-          name: NeoFreeBird-injected-TIPA
-          path: main/packages/${{ steps.package_name.outputs.tipa_package }}
-          if-no-files-found: error
+          echo "::notice::Release available at: https://github.com/${{ github.repository }}/releases"
+          
