@@ -1,31 +1,21 @@
-name: Build NeoFreeBird
+name: Build Neo
 
 on:
   workflow_dispatch:
     inputs:
       decrypted_ipa_url:
-        description: "Direct URL of the decrypted Twitter/X ipa"
+        description: "IPA URL"
         required: true
         type: string
       sdk_version:
-        description: "iOS SDK Version for Theos"
+        description: "Theos SDK Version"
         default: "16.5"
         required: true
         type: string
       target_version:
-        description: "Target iOS Version for Theos"
+        description: "Target iOS Version"
         default: "14.0"
         required: true
-        type: string
-      repo_commit:
-        description: "(Optional) Commit for main repo (patches)"
-        default: ""
-        required: false
-        type: string
-      tweak_commit:
-        description: "(Optional) Commit for tweak repo"
-        default: ""
-        required: false
         type: string
 
 concurrency:
@@ -34,47 +24,58 @@ concurrency:
 
 jobs:
   build-and-inject:
-    name: Build NeoFreeBird
-    runs-on: macos-13
+    name:
+    runs-on: macos-latest
     permissions:
       contents: write
 
     steps:
-      - name: Checkout main repo
-        uses: actions/checkout@v4
+      - name: Hide Sensitive Inputs
+        uses: levibostian/action-hide-sensitive-inputs@v1
         with:
-          repository: NeoFreeBird/app
-          path: main
-          ref: ${{ inputs.repo_commit || github.ref }}
-          submodules: recursive
-
-      - name: Checkout tweak repo (NeoFreeBird/tweak)
-        uses: actions/checkout@v4
-        with:
-          repository: NeoFreeBird/tweak
-          path: tweak
-          ref: ${{ inputs.tweak_commit || 'refs/heads/master' }}
-          submodules: recursive
-
+          exclude_inputs: sdk_version,target_version
+          
       - name: Install Dependencies
         run: brew install make dpkg ldid
 
-      - name: Add GNU Make to PATH
+      - name: Set PATH environment variable
         run: |
-          echo "$(brew --prefix make)/libexec/gnubin" >> "$GITHUB_PATH"
+          echo "$(brew --prefix make)/libexec/gnubin" >> $GITHUB_PATH
+          echo "THEOS=${{ github.workspace }}/theos" >> $GITHUB_ENV
+          
+      - name: Cache Theos
+        id: theos
+        uses: actions/cache@v5.0.2
+        env:
+          cache-name: theos_cache_13c2237
+        with:
+          path: theos/
+          key: ${{ env.cache-name }}
+          restore-keys: ${{ env.cache-name }}
 
-      - name: Download Theos
-        uses: actions/checkout@v4
+      - name: Setup Theos
+        if: ${{ steps.theos.outputs.cache-hit != 'true' }}
+        uses: actions/checkout@v6.0.1
         with:
           repository: theos/theos
-          ref: master
+          ref: 13c22376b5d83ff759c1993de0a861e673aa522b
           path: theos
           submodules: recursive
+          
+      - name: Download iOS SDK
+        if: ${{ steps.theos.outputs.cache-hit != 'true' }}
+        run: |
+          git clone --quiet -n --depth=1 --filter=tree:0 https://github.com/Tonwalter888/iOS-SDKs.git
+          cd iOS-SDKs
+          git sparse-checkout set --no-cone iPhoneOS18.6.sdk
+          git checkout
+          mv *.sdk $THEOS/sdks
+          
+      - name: Install Cyan
+        run: pipx install --force https://github.com/asdfzxcvbn/pyzule-rw/archive/main.zip
 
-      - name: Install cyan
-        run: pip install https://github.com/asdfzxcvbn/pyzule-rw/archive/main.zip
-
-      - name: Prepare Twitter/X iPA
+      - name: Prepare iPA
+        id: ipa
         run: |
           wget "$IPA_URL" --no-verbose -O main/packages/com.atebits.Tweetie2.ipa
           unzip -q main/packages/com.atebits.Tweetie2.ipa -d main/tmp
@@ -85,24 +86,11 @@ jobs:
         env:
           IPA_URL: ${{ inputs.decrypted_ipa_url }}
 
-      - name: Download iOS SDK
-        if: steps.SDK.outputs.cache-hit != 'true'
-        run: |
-          git clone -n --depth=1 --filter=tree:0 https://github.com/theos/sdks/
-          cd sdks
-          git sparse-checkout set --no-cone iPhoneOS${{ inputs.sdk_version }}.sdk
-          git checkout
-          mv ./*.sdk "${THEOS}/sdks"
-        env:
-          THEOS: ${{ github.workspace }}/theos
-
       - name: Build tweak with Theos
         run: |
           cd tweak
           sed -i '' "s/^TARGET.*$/TARGET := iphone:clang:${{ inputs.sdk_version }}:${{ inputs.target_version }}/" Makefile
           make package
-        env:
-          THEOS: ${{ github.workspace }}/theos
 
       - name: Copy deb to main/packages
         run: |
@@ -130,16 +118,16 @@ jobs:
           cd main/tmp
           zip -qr ../packages/temp.ipa Payload
           cd ..
-          cyan -i packages/temp.ipa -f "$DEB_FILE" -o packages/NeoFreeBird_${{ github.run_id }}_${{ env.X_VERSION }}.ipa
+          cyan -i packages/temp.ipa -f "$DEB_FILE" -o packages/NeoFreeBird_${{ github.run_id }}_${{ steps.ipa.outputs.X_VERSION }}.ipa
     
           # Create .tipa copy
-          cp packages/NeoFreeBird_${{ github.run_id }}_${{ env.X_VERSION }}.ipa packages/NeoFreeBird_${{ github.run_id }}_${{ env.X_VERSION }}.tipa
+          cp packages/NeoFreeBird_${{ github.run_id }}_${{ steps.ipa.outputs.X_VERSION }}.ipa packages/NeoFreeBird_${{ github.run_id }}_${{ steps.ipa.outputs.X_VERSION }}.tipa
 
       - name: Pass package name
         id: package_name
         run: |
-          echo "ipa_package=NeoFreeBird_${{ github.run_id }}_${{ env.X_VERSION }}.ipa" >> "$GITHUB_OUTPUT"
-          echo "tipa_package=NeoFreeBird_${{ github.run_id }}_${{ env.X_VERSION }}.tipa" >> "$GITHUB_OUTPUT"
+          echo "ipa_package=NeoFreeBird_${{ github.run_id }}_${{ steps.ipa.outputs.X_VERSION }}.ipa" >> "$GITHUB_OUTPUT"
+          echo "tipa_package=NeoFreeBird_${{ github.run_id }}_${{ steps.ipa.outputs.X_VERSION }}.tipa" >> "$GITHUB_OUTPUT"
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
