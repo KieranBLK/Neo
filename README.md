@@ -18,22 +18,3 @@
   </div>
 </div>
 <br>
-
-| | | |
-|:-------------------------:|:-------------------------:|:-------------------------:|
-| <img src="./Branding/screenshots/IMG_9189.png" alt="Screenshot 1"> | <img src="./Branding/screenshots/IMG_9190.png" alt="Screenshot 2"> | <img src="./Branding/screenshots/IMG_9191.png" alt="Screenshot 3"> |
-| <img src="./Branding/screenshots/IMG_9201.png" alt="Screenshot 4"> | <img src="./Branding/screenshots/IMG_9202.png" alt="Screenshot 5"> | <img src="./Branding/screenshots/IMG_9200.png" alt="Screenshot 6"> |
-
-
-
-## Features
-NeoFreeBird uses a modern app version with various changes such as branding reverts, removal of unnecessary features, along with our own fork of BHTwitter for blocking ads, getting various Twitter Blue features for free and being able to customize Twitter in various ways. Theres tons of new features to try!
-
-| | | |
-|:-------------------------:|:-------------------------:|:-------------------------:|
-| ![](./Branding/screenshots/IMG_9192.png) | ![](./Branding/screenshots/IMG_9193.png) | ![](./Branding/screenshots/IMG_9194.png) |
-| ![](./Branding/screenshots/IMG_9195.png) | ![](./Branding/screenshots/IMG_9196.png) | ![](./Branding/screenshots/IMG_9198.png) |
-| ![](./Branding/screenshots/IMG_9199.png) |   |   |
-
-> [!NOTE]  
-> <b>There are some remains</b><br>You may still see some X branding in web based stuff. We try our best to get rid of most of them.
