@@ -117,7 +117,7 @@ jobs:
       - name: Build Tweak
         run: |
           cd tweak
-          make clean package
+          make package
           
       - name: Copy Package to Directory
         run: |
