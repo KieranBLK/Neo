@@ -102,6 +102,13 @@ jobs:
       - name: Clone Tweak
         run: git clone --quiet --depth=1 https://github.com/NeoFreeBird/tweak.git
       
+      - name: Debug Theos + SDK
+        run: |
+          echo "THEOS is: $THEOS"
+          ls -lah $THEOS
+          echo "SDKs directory:"
+          ls -lah $THEOS/sdks || echo "No SDK directory"
+          
       - name: Build NFB
         run: |
           cd tweak
