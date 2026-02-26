@@ -70,7 +70,7 @@ jobs:
       
       - name: Get BHTwitter Version
         run: |
-          BHTWITTER_VERSION=$(awk '/Version:/ {print $2}' tweak/master/control)
+          BHTWITTER_VERSION=$(awk '/Version:/ {print $2}' NeoFreeBird/tweak/main/control)
           echo "bh_ver=$BHTWITTER_VERSION" >> "$GITHUB_OUTPUT"
           
       - name: Install Dependencies
