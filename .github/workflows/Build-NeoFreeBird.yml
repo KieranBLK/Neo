@@ -28,6 +28,14 @@ jobs:
           path: main
           ref: ${{ github.ref }}
           submodules: recursive
+      
+      - name: Checkout Tweak Repo
+        uses: actions/checkout@v6.0.1
+        with:
+          repository: NeoFreeBird/tweak
+          ref: ${{ 'refs/heads/master' }}
+          path: tweak
+          submodules: recursive
           
       - name: Hide Sensitive Inputs
         uses: levibostian/action-hide-sensitive-inputs@v1
@@ -99,8 +107,8 @@ jobs:
       - name: Install Cyan
         run: pipx install --force https://github.com/asdfzxcvbn/pyzule-rw/archive/main.zip
       
-      - name: Clone Tweak
-        run: git clone --quiet --depth=1 https://github.com/NeoFreeBird/tweak.git
+      # - name: Clone Tweak
+      #  run: git clone --quiet --depth=1 https://github.com/NeoFreeBird/tweak.git
       
       - name: Debug Theos + SDK
         run: |
@@ -109,16 +117,16 @@ jobs:
           echo "SDKs directory:"
           ls -lah $THEOS/sdks || echo "No SDK directory"
           
-      - name: Build NFB
+      - name: Build Tweak
         run: |
           cd tweak
-          make clean package DEBUG=0 FINALPACKAGE=1
+          make package
           
       - name: Copy Package to Directory
         run: |
          mkdir -p main
          find tweak -type f -name "*.deb" -exec cp {} main \;
-         echo "deb copied to main"
+         echo "Files in main after copy:"
          ls -lh main
 
       - name: Patch and Inject
