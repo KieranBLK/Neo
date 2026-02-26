@@ -72,6 +72,7 @@ jobs:
         id: bhver
         run: |
           BHTWITTER_VERSION=$(awk -F': ' '/^Version:/ {print $2}' tweak/control)
+          echo "BHTwitter version detected: $BHTWITTER_VERSION"
           echo "bh_ver=$BHTWITTER_VERSION" >> "$GITHUB_OUTPUT"          
       
       - name: Install Dependencies
@@ -123,7 +124,7 @@ jobs:
       - name: Build Tweak
         run: |
           cd tweak
-          make clean package DEBUG=0 FINALPACKAGE=1
+          make clean package
           
       - name: Copy Package to Directory
         run: |
