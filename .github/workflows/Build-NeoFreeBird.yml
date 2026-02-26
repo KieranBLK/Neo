@@ -147,7 +147,7 @@ jobs:
               tweaks="$tweaks $f"
             fi
           done
-          cyan -i twitter.ipa -o NeoFreeBird_${{ steps.ipa.outputs.x_version }}_${{ steps.ipa.outputs.bh_ver }}.ipa
+          cyan -i twitter.ipa -o NeoFreeBird_${{ steps.ipa.outputs.x_version }}_${{ steps.bhver.outputs.bh_ver }}.ipa
 
       - name: Upload Draft to GitHub Releases
         uses: softprops/action-gh-release@v2.0.1
