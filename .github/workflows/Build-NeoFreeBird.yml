@@ -28,14 +28,6 @@ jobs:
           path: main
           ref: ${{ github.ref }}
           submodules: recursive
-      
-      - name: Checkout Tweak Repo
-        uses: actions/checkout@v6.0.1
-        with:
-          repository: NeoFreeBird/tweak
-          ref: ${{ 'refs/heads/master' }}
-          path: tweak
-          submodules: recursive
           
       - name: Hide Sensitive Inputs
         uses: levibostian/action-hide-sensitive-inputs@v1
@@ -67,11 +59,6 @@ jobs:
 
           #Rename to "twitter.ipa" for tweak injection later on
           mv "$NAME_NO_EXT".ipa twitter.ipa  
-      
-      - name: Get BHTwitter Version
-        run: |
-          BHTWITTER_VERSION=$(awk '/Version:/ {print $2}' NeoFreeBird/tweak/main/control)
-          echo "bh_ver=$BHTWITTER_VERSION" >> "$GITHUB_OUTPUT"
           
       - name: Install Dependencies
         run: brew install make ldid
@@ -128,7 +115,15 @@ jobs:
           ls -lah $THEOS
           echo "SDKs directory:"
           ls -lah $THEOS/sdks || echo "No SDK directory"
-          
+      
+      - name: Clone Tweak
+        run: git clone --quiet --depth=1 https://github.com/NeoFreeBird/tweak.git          
+
+      - name: Get BHTwitter Version
+        run: |
+          BHTWITTER_VERSION=$(awk -F': ' '/^Version:/ {print $2}' tweak/control)
+          echo "bh_ver=$BHTWITTER_VERSION" >> "$GITHUB_OUTPUT"
+      
       - name: Build Tweak
         run: |
           cd tweak
