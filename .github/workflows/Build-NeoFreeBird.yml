@@ -67,6 +67,11 @@ jobs:
 
           #Rename to "twitter.ipa" for tweak injection later on
           mv "$NAME_NO_EXT".ipa twitter.ipa  
+      
+      - name: Get BHTwitter Version
+        run: |
+          BHTWITTER_VERSION=$(awk '/Version:/ {print $2}' tweak/master/control)
+          echo "bh_ver=$BHTWITTER_VERSION" >> "$GITHUB_OUTPUT"
           
       - name: Install Dependencies
         run: brew install make ldid
@@ -94,9 +99,19 @@ jobs:
           ref: 13c22376b5d83ff759c1993de0a861e673aa522b
           path: theos
           submodules: recursive
+      
+      - name: iOS SDK Caching
+        id: SDK
+        uses: actions/cache@v5.0.2
+        env:
+          cache-name: iOS_SDK_Cache
+        with:
+          path: theos/sdks/
+          key: ${{ env.cache-name }}
+          restore-keys: ${{ env.cache-name }} 
           
       - name: Download iOS SDK
-        if: ${{ steps.theos.outputs.cache-hit != 'true' }}
+        if: ${{ steps.SDK.outputs.cache-hit != 'true' }}
         run: |
           git clone --quiet -n --depth=1 --filter=tree:0 https://github.com/theos/sdks.git
           cd sdks
@@ -106,9 +121,6 @@ jobs:
           
       - name: Install Cyan
         run: pipx install --force https://github.com/asdfzxcvbn/pyzule-rw/archive/main.zip
-      
-      # - name: Clone Tweak
-      #  run: git clone --quiet --depth=1 https://github.com/NeoFreeBird/tweak.git
       
       - name: Debug Theos + SDK
         run: |
@@ -120,7 +132,7 @@ jobs:
       - name: Build Tweak
         run: |
           cd tweak
-          make package
+          make clean package DEBUG=0 FINALPACKAGE=1
           
       - name: Copy Package to Directory
         run: |
@@ -143,14 +155,14 @@ jobs:
               tweaks="$tweaks $f"
             fi
           done
-          cyan -i twitter.ipa -o NeoFreeBird_${{ steps.ipa.outputs.x_version }}.ipa
+          cyan -i twitter.ipa -o NeoFreeBird_${{ steps.ipa.outputs.x_version }}_${{ steps.ipa.outputs.bh_ver }}.ipa
 
       - name: Upload Draft to GitHub Releases
         uses: softprops/action-gh-release@v2.0.1
         with:
           tag_name: NFB-${{ github.run_number }}
-          name: NeoFreeBird_${{ steps.ipa.outputs.x_version }}.ipa
-          files: NeoFreeBird_${{ steps.ipa.outputs.x_version }}.ipa
+          name: NeoFreeBird_${{ steps.ipa.outputs.x_version }}_${{ steps.ipa.outputs.bh_ver }}.ipa
+          files: NeoFreeBird_${{ steps.ipa.outputs.x_version }}_${{ steps.ipa.outputs.bh_ver }}.ipa
           draft: true
       
       - name: Output Release URL
